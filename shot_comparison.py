@@ -37,8 +37,8 @@ pro1_s_data = getData(pro1_s)
 # hockey player's shot
 # data
 ##
-ama_w_peaks, _ = find_peaks(ama_w_data, prominence=8)
-ama_s_peaks, _ = find_peaks(ama_s_data, prominence=15)
+ama_w_peaks, _ = find_peaks(ama_w_data, prominence=6)
+ama_s_peaks, _ = find_peaks(ama_s_data, prominence=6)
 pro1_w_peaks, _ = find_peaks(pro1_w_data, prominence=8)
 pro1_s_peaks, _ = find_peaks(pro1_s_data, prominence=20)
 
@@ -89,6 +89,32 @@ ama_w_best = bestShotArr(ama_w_best_i, ama_w_data)
 ama_s_best = bestShotArr(ama_s_best_i, ama_s_data)
 pro1_w_best = bestShotArr(pro1_w_best_i, pro1_w_data)
 pro1_s_best = bestShotArr(pro1_s_best_i, pro1_s_data)
+
+
+##
+# Plot amateur's best
+# wrist shot and slap shot
+# in one graph
+##
+plt.plot(ama_w_best, label="Entuziasta labākais plaukstas metiens")
+plt.plot(ama_s_best, label="Entuziasta labākais šķēliens")
+plt.ylabel("Lineārais paātrinājums (m/s/s)")
+plt.xlabel("Indekss")
+plt.legend()
+plt.show()
+
+##
+# Plot professional's best
+# wrist shot and slap shot
+# in one graph
+##
+plt.plot(pro1_w_best, label="Profesionāļa labākais plaukstas metiens")
+plt.plot(pro1_s_best, label="Profesionāļa labākais šķēliens")
+plt.ylabel("Lineārais paātrinājums (m/s/s)")
+plt.xlabel("Indekss")
+plt.legend()
+plt.show()
+
 
 ##
 # Plot each hockey player's best

@@ -90,32 +90,6 @@ ama_s_best = bestShotArr(ama_s_best_i, ama_s_data)
 pro1_w_best = bestShotArr(pro1_w_best_i, pro1_w_data)
 pro1_s_best = bestShotArr(pro1_s_best_i, pro1_s_data)
 
-
-##
-# Plot amateur's best
-# wrist shot and slap shot
-# in one graph
-##
-plt.plot(ama_w_best, label="Entuziasta labākais plaukstas metiens")
-plt.plot(ama_s_best, label="Entuziasta labākais šķēliens")
-plt.ylabel("Lineārais paātrinājums (m/s/s)")
-plt.xlabel("Indekss")
-plt.legend()
-plt.show()
-
-##
-# Plot professional's best
-# wrist shot and slap shot
-# in one graph
-##
-plt.plot(pro1_w_best, label="Profesionāļa labākais plaukstas metiens")
-plt.plot(pro1_s_best, label="Profesionāļa labākais šķēliens")
-plt.ylabel("Lineārais paātrinājums (m/s/s)")
-plt.xlabel("Indekss")
-plt.legend()
-plt.show()
-
-
 ##
 # Plot each hockey player's best
 # wrist shot in one graph
@@ -137,6 +111,55 @@ plt.ylabel("Lineārais paātrinājums (m/s/s)")
 plt.xlabel("Indekss")
 plt.legend()
 plt.show()
+
+##
+# Amateur's wrist shot data
+# after first comparison and
+# feedback
+##
+ama_w_new = './dati/akmentins_wrist_new.csv'
+
+##
+# Function call and save
+# returned array in a variable
+##
+ama_w_data_new = getData(ama_w_new)
+
+##
+# Find index for best
+# peak in hockey player's
+# shot data
+##
+ama_w_peaks_new, _ = find_peaks(ama_w_data_new, prominence=6)
+
+##
+# Function call and save
+# each hockey player's best
+# shot index in variable
+##
+ama_w_best_i_new = bestShotCoordinates(ama_w_data_new, ama_w_peaks_new)
+
+##
+# Function call and save
+# each hockey player's best
+# shot data array in variable
+##
+ama_w_best_new = bestShotArr(ama_w_best_i_new, ama_w_data_new)
+
+##
+# Plot each hockey player's best
+# wrist shot in one graph
+# including the newly captured
+# amateur's wrist shot data
+##
+plt.plot(ama_w_best, label="Entuziasta iepriekšējais labākais plaukstas metiens")
+plt.plot(pro1_w_best, label="Profesionāļa labākais plaukstas metiens")
+plt.plot(ama_w_best_new, label="Entuziasta jaunais labākais plaukstas metiens")
+plt.ylabel("Lineārais paātrinājums (m/s/s)")
+plt.xlabel("Indekss")
+plt.legend()
+plt.show()
+
 
 
             

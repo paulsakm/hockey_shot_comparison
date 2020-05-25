@@ -1,13 +1,20 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import savgol_filter
 from scipy.signal import find_peaks
 
+##
+# Data file paths
+## 
 ama_w = './dati/akmentins_wrist.csv'
 ama_s = './dati/akmentins_slap.csv'
+ama2_w = './dati/potapovs_wrist.csv'
+ama2_s = './dati/potapovs_slap.csv'
+ama3_w = './dati/bisnieks_wrist.csv'
+ama3_s =  './dati/bisnieks_slap.csv'
 pro1_w = './dati/dzierkals_wrist.csv'
 pro1_s = './dati/dzierkals_slap.csv'
+
 
 ##
 # Function for importing data,
@@ -20,7 +27,6 @@ def getData(filename):
     df['acc_z'] = df['acc_z'].astype('float64')
     acc_z_arr = df['acc_z'].values
     acc_z_arr = np.round(acc_z_arr, 2)
-    acc_z_arr = savgol_filter(acc_z_arr, 9, 3)
     return acc_z_arr
 
 ##
@@ -29,136 +35,256 @@ def getData(filename):
 ##
 ama_w_data = getData(ama_w)
 ama_s_data = getData(ama_s)
+ama2_w_data = getData(ama2_w)
+ama2_s_data = getData(ama2_s)
+ama3_w_data = getData(ama3_w)
+ama3_s_data = getData(ama3_s)
 pro1_w_data = getData(pro1_w)
 pro1_s_data = getData(pro1_s)
 
-##
-# Find peaks for each
-# hockey player's shot
-# data
-##
-ama_w_peaks, _ = find_peaks(ama_w_data, prominence=6)
-ama_s_peaks, _ = find_peaks(ama_s_data, prominence=6)
-pro1_w_peaks, _ = find_peaks(pro1_w_data, prominence=8)
-pro1_s_peaks, _ = find_peaks(pro1_s_data, prominence=20)
+
+min_prctg = 0.2
+top_peak_count = 5
 
 ##
-# Find index for best
-# peak in hockey player's
-# shot data
+# Function for evaluating and 
+# finding the amount of
+# hockey shots asked in parameter
 ##
-def bestShotCoordinates(shot_data, peaks):
-    best_shot_coordinates = peaks[0]
-    for i in np.nditer(peaks):
-        if shot_data[best_shot_coordinates] < shot_data[i]:
-            best_shot_coordinates = i
-    return best_shot_coordinates
+def getTopPeaks(min_prctg, top_peak_count, shot_data):
+    tmp_height = min_prctg * max(shot_data)
+    tmp_data_peaks, _ = find_peaks(shot_data, height=tmp_height)
+    i = 0
+    while i < len(tmp_data_peaks)-1:
+        tmp_data_peaks[i] = tmp_data_peaks[i+1] - tmp_data_peaks[i]
+        i += 1
+    i = 0
+    tmp_arr = []
+    tmp_max = max(tmp_data_peaks[0:len(tmp_data_peaks)-1])
+    while i < tmp_data_peaks.size-1:
+        if min_prctg * tmp_max < tmp_data_peaks[i]:
+            tmp_arr.append(tmp_data_peaks[i])
+        i += 1
+    tmp_data_peaks, _ = find_peaks(shot_data, height=tmp_height, distance=min(tmp_arr))
+    tmp_arr = []
+    i = 0
+    while i < len(tmp_data_peaks):    
+        tmp_arr.append(shot_data[tmp_data_peaks[i]])
+        i += 1
+    tmp_arr = np.sort(tmp_arr)[::-1]
+    if len(tmp_arr) > top_peak_count:
+        tmp_arr = tmp_arr[0:top_peak_count]
+    tmp_arr2 = []
+    j = 0
+    while j < len(tmp_arr):   
+        i = 0
+        while i < len(tmp_data_peaks):   
+            if shot_data[tmp_data_peaks[i]] == tmp_arr[j]:
+                tmp_arr2.append(tmp_data_peaks[i])            
+            i += 1
+        j += 1
+    tmp_arr2 = np.sort(tmp_arr2)
+    return tmp_arr2
+
 
 ##
-# Function call and save
-# each hockey player's best
-# shot index in variable
+# Find best 5 shots captured 
+# within wrist shot data
 ##
-ama_w_best_i = bestShotCoordinates(ama_w_data, ama_w_peaks)
-ama_s_best_i = bestShotCoordinates(ama_s_data, ama_s_peaks)
-pro1_w_best_i = bestShotCoordinates(pro1_w_data, pro1_w_peaks)
-pro1_s_best_i = bestShotCoordinates(pro1_s_data, pro1_s_peaks)
+ama_w_peaks = getTopPeaks(min_prctg, top_peak_count, ama_w_data)
+ama2_w_peaks = getTopPeaks(min_prctg, top_peak_count, ama2_w_data)
+ama3_w_peaks = getTopPeaks(min_prctg, top_peak_count, ama3_w_data)
+pro1_w_peaks = getTopPeaks(min_prctg, top_peak_count, pro1_w_data)
+
 
 ##
-# Get 50 values of
-# linear acceleration
-# from the hockey player's
-# best shot
+# Find best 5 shots captured
+# within slap shot data
 ##
-def bestShotArr(best_shot_coordinate, shot_data):
-    i = 50
-    best_shot_acc_list = []
-    best_shot_coordinate = best_shot_coordinate+3
-    while i >= 0:
-        best_shot_acc_list.append(shot_data[best_shot_coordinate-i])
-        i = i - 1
-    best_shot_acc_array = np.array(best_shot_acc_list)
-    return best_shot_acc_array
+ama_s_peaks = getTopPeaks(min_prctg, top_peak_count, ama_s_data)
+ama2_s_peaks = getTopPeaks(min_prctg, top_peak_count, ama2_s_data)
+ama3_s_peaks = getTopPeaks(min_prctg, top_peak_count, ama3_s_data)
+pro1_s_peaks = getTopPeaks(min_prctg, top_peak_count, pro1_s_data)
+
 
 ##
-# Function call and save
-# each hockey player's best
-# shot data array in variable
+# Calculating average shot
+# from the given top peaks
 ##
-ama_w_best = bestShotArr(ama_w_best_i, ama_w_data)
-ama_s_best = bestShotArr(ama_s_best_i, ama_s_data)
-pro1_w_best = bestShotArr(pro1_w_best_i, pro1_w_data)
-pro1_s_best = bestShotArr(pro1_s_best_i, pro1_s_data)
+def avgShot(shot_data, top_peaks, cut_off_first = 0.5):
+    tmp_distance = top_peaks.copy()
+    i = 0
+    while i < len(tmp_distance)-1:
+        tmp_distance[i] = tmp_distance[i+1] - tmp_distance[i]
+        i += 1
+    min_distance = int((1-cut_off_first) * min(tmp_distance[0:len(tmp_distance)-1]))
+    j = 0
+    list_arr = []
+    while j < len(top_peaks):
+        list_arr.append([])
+        index = top_peaks[j] - min_distance
+        while index <= top_peaks[j]:
+            if index >= 0:
+                list_arr[j].append(shot_data[index])            
+            else: 
+                list_arr[j].append(0)
+            index += 1
+        j += 1
+    average_arr = []
+    i = 0
+    while i <= min_distance:    
+        j = 0
+        summ = 0
+        while j < len(list_arr):
+            summ += list_arr[j][i]        
+            j += 1
+        average_arr.append(summ/len(list_arr)) 
+        i += 1
+    return average_arr
 
 ##
-# Plot each hockey player's best
-# wrist shot in one graph
+# Find average shot of 
+# 5 best shots of each hockey
+# player's wrist shot data
 ##
-plt.plot(ama_w_best, label="Entuziasta labākais plaukstas metiens")
-plt.plot(pro1_w_best, label="Profesionāļa labākais plaukstas metiens")
-plt.ylabel("Lineārais paātrinājums (m/s/s)")
-plt.xlabel("Indekss")
-plt.legend()
-plt.show()
+ama_w_avg = avgShot(ama_w_data, ama_w_peaks)
+ama2_w_avg = avgShot(ama2_w_data, ama2_w_peaks)
+ama3_w_avg = avgShot(ama3_w_data, ama3_w_peaks)
+pro1_w_avg = avgShot(pro1_w_data, pro1_w_peaks)
 
 ##
-# Plot each hockey player's best
-# slap shot in one graph
+# Find average shot of 
+# 5 best shots of each hockey
+# player's slap shot data
 ##
-plt.plot(ama_s_best, label="Entuziasta labākais šķēliens")
-plt.plot(pro1_s_best, label="Profesionāļa labākais šķēliens")
-plt.ylabel("Lineārais paātrinājums (m/s/s)")
-plt.xlabel("Indekss")
-plt.legend()
-plt.show()
+ama_s_avg = avgShot(ama_s_data, ama_s_peaks)
+ama2_s_avg = avgShot(ama2_s_data, ama2_s_peaks)
+ama3_s_avg = avgShot(ama3_s_data, ama3_s_peaks)
+pro1_s_avg = avgShot(pro1_s_data, pro1_s_peaks)
+
 
 ##
-# Amateur's wrist shot data
-# after first comparison and
-# feedback
+# Function for making
+# all hockey shot data
+# array with equal index
+# length
 ##
-ama_w_new = './dati/akmentins_wrist_new.csv'
+def makeEvenArrays(arr1, arr2):
+    if len(arr1) > len(arr2):
+        tmp1 = arr1.copy()
+        tmp2 = arr2
+    else:
+        tmp1 = arr2.copy()
+        tmp2 = arr1        
+    i = 0
+    j = len(tmp1) - len(tmp2)
+    while i < len(tmp1):
+        if i >= j: 
+            tmp1[i] = tmp2[i - j]
+        else:
+            tmp1[i] = 0
+        i += 1  
+    return tmp1
 
 ##
-# Function call and save
-# returned array in a variable
+# Get max value for
+# each hockey player's
+# wrist shot average 
 ##
-ama_w_data_new = getData(ama_w_new)
+print("Wrist shot's max linear acceleration values in avg shots")
+ama_w_max = max(ama_w_avg)
+print(ama_w_max)
+ama2_w_max = max(ama2_w_avg)
+print(ama2_w_max)
+ama3_w_max = max(ama3_w_avg)
+print(ama3_w_max)
+pro1_w_max = max(pro1_w_avg)
+print(pro1_w_max)
 
 ##
-# Find index for best
-# peak in hockey player's
-# shot data
+# Calculate how much
+# amateur's avg wrist shot 
+# corresponds with 
+# professionals shot
+#
+print("How close to professional's wrist shot")
+ama_w_prc = (ama_w_max / pro1_w_max) * 100
+print(ama_w_prc)
+
+ama2_w_prc = (ama2_w_max / pro1_w_max) * 100
+print(ama2_w_prc)
+
+ama3_w_prc = (ama3_w_max / pro1_w_max) * 100
+print(ama3_w_prc)
+
+
+#
+# Get max value for
+# each hockey player's
+# slap shot average 
 ##
-ama_w_peaks_new, _ = find_peaks(ama_w_data_new, prominence=6)
+print("Slap shot's max linear acceleration values in avg shots")
+ama_s_max = max(ama_s_avg)
+print(ama_s_max)
+ama2_s_max = max(ama2_s_avg)
+print(ama2_s_max)
+ama3_s_max = max(ama3_s_avg)
+print(ama3_s_max)
+pro1_s_max = max(pro1_s_avg)
+print(pro1_s_max)
 
 ##
-# Function call and save
-# each hockey player's best
-# shot index in variable
+# Calculate how much
+# amateur's avg wrist shot 
+# corresponds with 
+# professionals shot
 ##
-ama_w_best_i_new = bestShotCoordinates(ama_w_data_new, ama_w_peaks_new)
+print("How close to professional's slap shot")
+ama_s_prc = (ama_s_max / pro1_s_max) * 100
+print(ama_s_prc)
+ama2_s_prc = (ama2_s_max / pro1_s_max) * 100
+print(ama2_s_prc)
+ama3_s_prc = (ama3_s_max / pro1_s_max) * 100
+print(ama3_s_prc)
 
 ##
-# Function call and save
-# each hockey player's best
-# shot data array in variable
+# Make arrays with the
+# same amount of data
 ##
-ama_w_best_new = bestShotArr(ama_w_best_i_new, ama_w_data_new)
+tmp_arr = makeEvenArrays(ama_w_avg, ama2_w_avg)
+if len(ama_w_avg) > len(ama2_w_avg):
+    ama2_w_avg = tmp_arr
+else:
+    ama_w_avg = tmp_arr
+
+tmp_arr = makeEvenArrays(ama2_w_avg, ama3_w_avg)
+if len(ama2_w_avg) > len(ama3_w_avg):
+    ama3_w_avg = tmp_arr
+else:
+    ama2_w_avg = tmp_arr
 
 ##
-# Plot each hockey player's best
-# wrist shot in one graph
-# including the newly captured
-# amateur's wrist shot data
+# Make arrays with the
+# same amount of data
 ##
-plt.plot(ama_w_best, label="Entuziasta iepriekšējais labākais plaukstas metiens")
-plt.plot(pro1_w_best, label="Profesionāļa labākais plaukstas metiens")
-plt.plot(ama_w_best_new, label="Entuziasta jaunais labākais plaukstas metiens")
-plt.ylabel("Lineārais paātrinājums (m/s/s)")
-plt.xlabel("Indekss")
-plt.legend()
-plt.show()
+tmp_arr = makeEvenArrays(ama_s_avg, ama2_s_avg)
+if len(ama_s_avg) > len(ama2_s_avg):
+    ama2_s_avg = tmp_arr
+else:
+    ama_s_avg = tmp_arr
+
+tmp_arr = makeEvenArrays(ama2_s_avg, ama3_s_avg)
+if len(ama2_s_avg) > len(ama3_s_avg):
+    ama3_s_avg = tmp_arr
+else:
+    ama2_s_avg = tmp_arr
+
+
+
+
+
+
+
 
 
 
